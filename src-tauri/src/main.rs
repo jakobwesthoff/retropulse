@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::collections::HashMap;
 use std::sync::{mpsc, Mutex};
 
 use std::thread::JoinHandle;
@@ -17,7 +18,9 @@ use cpal::{
     traits::{DeviceTrait, HostTrait, StreamTrait},
     SampleFormat, SampleRate, SupportedStreamConfigRange,
 };
+use serde::Serialize;
 use tauri::State;
+use uuid::Uuid;
 
 fn desired_config(cfg: &SupportedStreamConfigRange) -> bool {
     cfg.channels() == 2
@@ -44,6 +47,14 @@ impl Module {
             }
         };
     }
+
+    fn get_duration_seconds(&self) -> f64 {
+        unsafe { libopenmpt_sys::openmpt_module_get_duration_seconds(self.handle) }
+    }
+
+    fn get_position_seconds(&self) -> f64 {
+        unsafe { libopenmpt_sys::openmpt_module_get_position_seconds(self.handle) }
+    }
 }
 
 unsafe impl Send for Module {}
@@ -68,6 +79,29 @@ fn pause_module(player: State<Mutex<Player>>) {
     player.lock().unwrap().pause();
 }
 
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase", tag = "event", content = "data")]
+enum PlayerEvent {
+    Playing,
+    Paused,
+    PositionUpdated { position: f64, duration: f64 },
+}
+
+#[tauri::command]
+fn subscribe_to_player_events(
+    player: State<Mutex<Player>>,
+    channel: tauri::ipc::Channel<PlayerEvent>,
+) -> String {
+    eprintln!("Subscribing to player events");
+    dbg!(player.lock().unwrap().subscribe_to_events(channel))
+}
+
+#[tauri::command]
+fn unsubscribe_from_player_events(player: State<Mutex<Player>>, id: String) -> bool {
+    eprintln!("Unsubscribing from player events with {}", id);
+    dbg!(player.lock().unwrap().unsubscribe_from_events(id))
+}
+
 enum PlayerCommand {
     Load(String),
     Play,
@@ -76,8 +110,10 @@ enum PlayerCommand {
 }
 
 struct Player {
-    sender: Option<mpsc::Sender<PlayerCommand>>,
-    join_handle: Option<JoinHandle<()>>,
+    playback_sender: Option<mpsc::Sender<PlayerCommand>>,
+    playback_join_handle: Option<JoinHandle<()>>,
+    events_join_handle: Option<JoinHandle<()>>,
+    subscribers: Arc<Mutex<HashMap<String, tauri::ipc::Channel<PlayerEvent>>>>,
 }
 
 impl Drop for Player {
@@ -89,19 +125,37 @@ impl Drop for Player {
 impl Player {
     pub fn spawn() -> Self {
         let mut player = Self {
-            sender: None,
-            join_handle: None,
+            playback_sender: None,
+            playback_join_handle: None,
+            events_join_handle: None,
+            subscribers: Arc::new(Mutex::new(HashMap::new())),
         };
-        player.spawn_thread();
+
+        let (sender, receiver) = mpsc::channel::<PlayerEvent>();
+        player.spawn_event_thread(receiver);
+        player.spawn_playback_thread(sender);
 
         player
     }
 
-    fn spawn_thread(&mut self) {
-        let (sender, receiver) = mpsc::channel::<PlayerCommand>();
-        self.sender = Some(sender);
+    fn spawn_event_thread(&mut self, receiver: mpsc::Receiver<PlayerEvent>) {
+        let subscribers_mutex = self.subscribers.clone();
+        self.events_join_handle = Some(std::thread::spawn(move || 'receive_loop: loop {
+            let event = receiver.recv().unwrap();
+            let subscribers = subscribers_mutex.lock().unwrap();
+            for subscriber in subscribers.values() {
+                subscriber.send(event.clone()).unwrap();
+            }
+            drop(subscribers);
+        }));
+    }
 
-        self.join_handle = Some(std::thread::spawn(move || {
+    fn spawn_playback_thread(&mut self, event_sender: mpsc::Sender<PlayerEvent>) {
+        let (sender, receiver) = mpsc::channel::<PlayerCommand>();
+        self.playback_sender = Some(sender);
+
+        self.playback_join_handle = Some(std::thread::spawn(move || {
+            let event_sender = Arc::new(event_sender);
             let mut stream = None;
 
             'receive_loop: loop {
@@ -139,31 +193,44 @@ impl Player {
                             return;
                         };
                         let cfg = cfg.with_sample_rate(SampleRate(48_000)).config();
-                        stream = Some(
-                            cpal_dev
-                                .build_output_stream(
-                                    &cfg,
-                                    move |data: &mut [f32], _cpal| {
-                                        mod_handle.read(cfg.sample_rate.0 as _, data)
-                                    },
-                                    |err| {
-                                        dbg!(err);
-                                    },
-                                    None,
-                                )
-                                .unwrap(),
-                        );
+                        {
+                            let event_sender = event_sender.clone();
+                            stream = Some(
+                                cpal_dev
+                                    .build_output_stream(
+                                        &cfg,
+                                        move |data: &mut [f32], _cpal| {
+                                            mod_handle.read(cfg.sample_rate.0 as _, data);
+                                            event_sender
+                                                .send(PlayerEvent::PositionUpdated {
+                                                    position: mod_handle.get_position_seconds(),
+                                                    duration: mod_handle.get_duration_seconds(),
+                                                })
+                                                .unwrap();
+                                        },
+                                        |err| {
+                                            dbg!(err);
+                                        },
+                                        None,
+                                    )
+                                    .unwrap(),
+                            );
+                        }
+
+                        event_sender.send(PlayerEvent::Playing).unwrap();
                     }
                     PlayerCommand::Play => {
                         println!("Play");
                         if let Some(ref stream) = stream {
                             stream.play().unwrap();
+                            event_sender.send(PlayerEvent::Playing).unwrap();
                         }
                     }
                     PlayerCommand::Pause => {
                         println!("Pause");
                         if let Some(ref stream) = stream {
                             stream.pause().unwrap();
+                            event_sender.send(PlayerEvent::Paused).unwrap();
                         }
                     }
                     PlayerCommand::Terminate => {
@@ -175,7 +242,7 @@ impl Player {
     }
 
     fn get_channel(&self) -> &mpsc::Sender<PlayerCommand> {
-        let Some(ref sender) = self.sender else {
+        let Some(ref sender) = self.playback_sender else {
             panic!("Unable to get Player channel for sending");
         };
 
@@ -187,12 +254,12 @@ impl Player {
 
         sender.send(PlayerCommand::Terminate).unwrap();
 
-        if self.join_handle.is_some() {
-            let join_handle = self.join_handle.take().unwrap();
+        if self.playback_join_handle.is_some() {
+            let join_handle = self.playback_join_handle.take().unwrap();
             join_handle.join().unwrap();
         }
 
-        self.sender = None;
+        self.playback_sender = None;
     }
 
     pub fn load(&self, filepath: &str) {
@@ -214,6 +281,19 @@ impl Player {
 
         sender.send(PlayerCommand::Pause).unwrap();
     }
+
+    pub fn subscribe_to_events(&mut self, channel: tauri::ipc::Channel<PlayerEvent>) -> String {
+        let uuid = Uuid::new_v4().to_string();
+        self.subscribers
+            .lock()
+            .unwrap()
+            .insert(uuid.clone(), channel);
+        uuid
+    }
+
+    pub fn unsubscribe_from_events(&mut self, uuid: String) -> bool {
+        self.subscribers.lock().unwrap().remove(&uuid).is_some()
+    }
 }
 
 fn main() {
@@ -224,7 +304,9 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             load_module,
             play_module,
-            pause_module
+            pause_module,
+            subscribe_to_player_events,
+            unsubscribe_from_player_events
         ])
         .manage(Mutex::new(player))
         .run(tauri::generate_context!())
