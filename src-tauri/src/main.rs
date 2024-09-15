@@ -220,6 +220,7 @@ fn main() {
     let player = Player::spawn();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             load_module,
             play_module,
