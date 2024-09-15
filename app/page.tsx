@@ -11,7 +11,7 @@ import {
   SkipForward,
   Square,
 } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
+import { Seeker } from '@/components/ui/seeker';
 
 export default function Home() {
   const handleLoad = async () => {
@@ -51,7 +51,7 @@ export default function Home() {
         </div>
       </div>
       <div className="space-y-2 mb-4">
-        <Slider defaultValue={[50]} max={100} step={1} className="w-full" />
+        <Seeker defaultValue={[50]} max={100} step={1} className="w-full" />
         <div className="flex items-center justify-between text-zinc-600 text-sm">
           <span>01:40</span>
           <span>03:20</span>
