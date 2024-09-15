@@ -3,6 +3,16 @@
 @tailwind utilities;
 
 body {
+  /* Disable text selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+
+  cursor: default;
+}
+
+body {
   font-family: Helvetica Neue, Arial, Helvetica, sans-serif;
 }
 
