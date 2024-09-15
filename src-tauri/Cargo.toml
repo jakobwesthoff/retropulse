@@ -22,6 +22,7 @@ libopenmpt-sys = "0.3.0"
 cpal = "0.15.2"
 tauri-plugin-dialog = "2.0.0-rc"
 uuid = { version = "1.10.0", features = ["v4"] }
+anyhow = "1.0.89"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
