@@ -10,6 +10,7 @@ import {
   SkipBack,
   SkipForward,
   Square,
+  StepForward,
 } from "lucide-react";
 import { Seeker } from "@/components/ui/seeker";
 import { useEffect, useState } from "react";
@@ -88,7 +89,9 @@ export default function Home() {
             I am the awesome mod currently playing
           </Marquee>
           <Button variant="outline" size="icon" onClick={handleLoad}>
-            <Folder className="w-5 h-5" />
+            {/* There is no eject icon, but a rotated step-forward actually is a
+                pretty good eject symbol ;) */}
+            <StepForward className="-rotate-90 w-5 h-5" />
           </Button>
         </div>
       </div>
