@@ -1,6 +1,6 @@
 "use client";
 
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,9 +11,42 @@ import {
   SkipForward,
   Square,
 } from "lucide-react";
-import { Seeker } from '@/components/ui/seeker';
+import { Seeker } from "@/components/ui/seeker";
+import { useEffect, useState } from "react";
+
+type PlayerEvent =
+  | { event: "playing" }
+  | { event: "paused" }
+  | { event: "positionUpdated"; data: { position: number; duration: number } };
 
 export default function Home() {
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    const channel = new Channel<PlayerEvent>();
+    channel.onmessage = (message) => {
+      switch (message.event) {
+        case "positionUpdated":
+          setDuration(message.data.duration);
+          setPosition(message.data.position);
+          break;
+        default:
+          console.log("Received player event of type ", message.event);
+      }
+    };
+
+    const subscriptionPromise = invoke("subscribe_to_player_events", {
+      channel,
+    });
+
+    return () => {
+      subscriptionPromise.then((id) => {
+        invoke("unsubscribe_from_player_events", { id });
+      });
+    };
+  }, []);
+
   const handleLoad = async () => {
     const filepath = await open({
       multiple: false,
@@ -38,23 +71,36 @@ export default function Home() {
     await invoke("pause_module");
   };
 
+  const formatSeconds = (seconds: number): string => {
+    const rounded = Math.round(seconds);
+    const s = rounded % 60;
+    const m = Math.floor(rounded / 60);
+
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  };
+
   return (
     <main className="max-w-[400px] w-full shadow-lg p-4 rounded-lg mx-auto">
       <div className="mb-4">
         <div className="flex items-center justify-between space-x-2">
-            <div className="text-lg font-semibold text-zinc-700 overflow-hidden whitespace-nowrap">
-              I am the awesome mod currently playing
-            </div>
+          <div className="text-lg font-semibold text-zinc-700 overflow-hidden whitespace-nowrap">
+            I am the awesome mod currently playing
+          </div>
           <Button variant="outline" size="icon" onClick={handleLoad}>
             <Folder className="w-5 h-5" />
           </Button>
         </div>
       </div>
       <div className="space-y-2 mb-4">
-        <Seeker defaultValue={[50]} max={100} step={1} className="w-full" />
+        <Seeker
+          value={[Math.round(position)]}
+          max={Math.round(duration)}
+          step={1}
+          className="w-full"
+        />
         <div className="flex items-center justify-between text-zinc-600 text-sm">
-          <span>01:40</span>
-          <span>03:20</span>
+          <span>{formatSeconds(position)}</span>
+          <span>{formatSeconds(duration)}</span>
         </div>
       </div>
       <div className="flex justify-center items-center space-x-2">
@@ -76,20 +122,4 @@ export default function Home() {
       </div>
     </main>
   );
-
-  // return (
-  //   <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-  //     <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-  //       <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" ref={buttonRef} onClick={() => handleLoad()}>
-  //         Load
-  //       </button>
-  //       <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" ref={buttonRef} onClick={() => handlePlay()}>
-  //         Play
-  //       </button>
-  //       <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" ref={buttonRef} onClick={() => handlePause()}>
-  //         Pause
-  //       </button>
-  //     </main>
-  //   </div>
-  // );
 }
