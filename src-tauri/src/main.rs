@@ -1,12 +1,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::sync::Mutex;
 use player::Player;
+use std::sync::Mutex;
 
+mod commands;
 mod openmpt;
 mod player;
-mod commands;
 
 fn main() {
     let player = Player::spawn();
