@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Seeker } from "@/components/ui/seeker";
 import { useEffect, useState } from "react";
+import { Marquee } from "@/components/ui/marquee";
 
 type PlayerEvent =
   | { event: "playing" }
@@ -83,9 +84,9 @@ export default function Home() {
     <main className="max-w-[400px] w-full shadow-lg p-4 rounded-lg mx-auto">
       <div className="mb-4">
         <div className="flex items-center justify-between space-x-2">
-          <div className="text-lg font-semibold text-zinc-700 overflow-hidden whitespace-nowrap">
+          <Marquee className="text-lg font-semibold text-zinc-700 overflow-hidden whitespace-nowrap">
             I am the awesome mod currently playing
-          </div>
+          </Marquee>
           <Button variant="outline" size="icon" onClick={handleLoad}>
             <Folder className="w-5 h-5" />
           </Button>
