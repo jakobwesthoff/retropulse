@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-use std::sync::{mpsc, Arc, Mutex};
-use std::thread::JoinHandle;
-
+use crate::openmpt;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, SampleRate, SupportedStreamConfigRange};
 use serde::Serialize;
+use std::collections::HashMap;
+use std::sync::{mpsc, Arc, Mutex};
+use std::thread::JoinHandle;
 use uuid::Uuid;
-
-use crate::openmpt;
 
 fn desired_config(cfg: &SupportedStreamConfigRange) -> bool {
     cfg.channels() == 2
