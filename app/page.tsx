@@ -4,7 +4,6 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Button } from "@/components/ui/button";
 import {
-  Folder,
   Pause,
   Play,
   SkipBack,
@@ -17,24 +16,48 @@ import { useEffect, useState } from "react";
 import { Marquee } from "@/components/ui/marquee";
 
 type PlayerEvent =
-  | { event: "playing" }
-  | { event: "paused" }
+  | {
+      event: "loaded";
+      data: {
+        metadata: Array<{ key: string; value: string }>;
+        duration: number;
+      };
+    }
+  | { event: "playing"; data: undefined }
+  | { event: "paused"; data: undefined }
   | { event: "positionUpdated"; data: { position: number; duration: number } };
 
 export default function Home() {
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [title, setTitle] = useState("Unknown");
 
   useEffect(() => {
     const channel = new Channel<PlayerEvent>();
     channel.onmessage = (message) => {
       switch (message.event) {
+        case "loaded":
+          setDuration(message.data.duration);
+          setPosition(0);
+          const title = message.data.metadata.find(
+            (candidate) => candidate.key === "title"
+          );
+          if (title) {
+            setTitle(title.value);
+          } else {
+            setTitle("Unknown");
+          }
+          break;
         case "positionUpdated":
           setDuration(message.data.duration);
           setPosition(message.data.position);
           break;
         default:
-          console.log("Received player event of type ", message.event);
+          console.log(
+            "Received player event of type ",
+            message.event,
+            message.data
+          );
       }
     };
 
@@ -86,9 +109,14 @@ export default function Home() {
       <div className="mb-4">
         <div className="flex items-center justify-between space-x-2">
           <Marquee className="text-lg font-semibold text-zinc-700 overflow-hidden whitespace-nowrap">
-            I am the awesome mod currently playing
+            {title}
           </Marquee>
-          <Button variant="outline" size="icon" onClick={handleLoad}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="flex-shrink-0"
+            onClick={handleLoad}
+          >
             {/* There is no eject icon, but a rotated step-forward actually is a
                 pretty good eject symbol ;) */}
             <StepForward className="-rotate-90 w-5 h-5" />

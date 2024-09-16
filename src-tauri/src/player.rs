@@ -16,9 +16,17 @@ fn desired_config(cfg: &SupportedStreamConfigRange) -> bool {
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase", tag = "event", content = "data")]
 pub enum PlayerEvent {
+    Loaded {
+        metadata: Vec<openmpt::module::Metadata>,
+        duration: f64,
+    },
     Playing,
     Paused,
-    PositionUpdated { position: f64, duration: f64 },
+    PositionUpdated {
+        position: f64,
+        duration: f64,
+    },
+    Terminated,
 }
 
 enum PlayerCommand {
@@ -60,13 +68,16 @@ impl Player {
     fn spawn_event_thread(&mut self, receiver: mpsc::Receiver<PlayerEvent>) {
         let subscribers_mutex = self.subscribers.clone();
         self.events_join_handle = Some(std::thread::spawn(move || 'receive_loop: loop {
-            // @TODO: Allow for proper termination of the thread
             let event = receiver.recv().unwrap();
             let subscribers = subscribers_mutex.lock().unwrap();
             for subscriber in subscribers.values() {
                 subscriber.send(event.clone()).unwrap();
             }
             drop(subscribers);
+
+            if let PlayerEvent::Terminated = event {
+                break 'receive_loop;
+            }
         }));
     }
 
@@ -84,7 +95,9 @@ impl Player {
                     PlayerCommand::Load(filepath) => {
                         println!("Load filepath {}", filepath);
                         let data = std::fs::read(filepath).unwrap();
-                        let mut module = openmpt::Module::try_from_memory(&data).unwrap();
+                        let mut module = openmpt::module::Module::try_from_memory(&data).unwrap();
+                        let metadata = module.get_metadata();
+                        let module_duration = module.get_duration_seconds();
 
                         let cpal_host = cpal::default_host();
                         let cpal_dev = cpal_host.default_output_device().unwrap();
@@ -93,6 +106,8 @@ impl Player {
                             panic!("Output device doesn't support desired parameters");
                         };
                         let cfg = cfg.with_sample_rate(SampleRate(48_000)).config();
+
+                        let mut samples_since_last_position_update = 0;
                         {
                             let event_sender = event_sender.clone();
                             stream = Some(
@@ -101,14 +116,20 @@ impl Player {
                                         &cfg,
                                         move |data: &mut [f32], _cpal| {
                                             module.read(cfg.sample_rate.0 as _, data);
-                                            // @TODO: Limit updates to be more efficient
-                                            event_sender
-                                                .send(PlayerEvent::PositionUpdated {
-                                                    position: module.get_position_seconds(),
-                                                    // @TODO: Do not retrieve duration every time.
-                                                    duration: module.get_duration_seconds(),
-                                                })
-                                                .unwrap();
+                                            // Send updates limited to once every half second
+                                            samples_since_last_position_update += data.len() / 2;
+                                            if samples_since_last_position_update
+                                                / (cfg.sample_rate.0 as usize / 2)
+                                                >= 1
+                                            {
+                                                samples_since_last_position_update = 0;
+                                                event_sender
+                                                    .send(PlayerEvent::PositionUpdated {
+                                                        position: module.get_position_seconds(),
+                                                        duration: module_duration,
+                                                    })
+                                                    .unwrap();
+                                            }
                                         },
                                         |err| {
                                             dbg!(err);
@@ -118,6 +139,13 @@ impl Player {
                                     .unwrap(),
                             );
                         }
+
+                        event_sender
+                            .send(PlayerEvent::Loaded {
+                                metadata: metadata.to_vec(),
+                                duration: module_duration,
+                            })
+                            .unwrap();
 
                         event_sender.send(PlayerEvent::Playing).unwrap();
                     }
@@ -136,6 +164,7 @@ impl Player {
                         }
                     }
                     PlayerCommand::Terminate => {
+                        event_sender.send(PlayerEvent::Terminated).unwrap();
                         break 'receive_loop;
                     }
                 }
@@ -158,6 +187,11 @@ impl Player {
 
         if self.playback_join_handle.is_some() {
             let join_handle = self.playback_join_handle.take().unwrap();
+            join_handle.join().unwrap();
+        }
+
+        if self.events_join_handle.is_some() {
+            let join_handle = self.events_join_handle.take().unwrap();
             join_handle.join().unwrap();
         }
 
