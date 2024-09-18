@@ -29,7 +29,7 @@ export const Marquee = ({
     handleResize();
 
     window.addEventListener("resize", handleResize);
-    () => window.removeEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [children]);
 
   return (
