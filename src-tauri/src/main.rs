@@ -17,6 +17,9 @@ fn main() {
             commands::load_module,
             commands::play_module,
             commands::pause_module,
+            commands::stop_module,
+            commands::next_module,
+            commands::previous_module,
             commands::subscribe_to_player_events,
             commands::unsubscribe_from_player_events
         ])

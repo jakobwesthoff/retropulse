@@ -18,6 +18,21 @@ pub fn pause_module(player: State<Mutex<Player>>) {
 }
 
 #[tauri::command]
+pub fn stop_module(player: State<Mutex<Player>>) {
+    player.lock().unwrap().stop();
+}
+
+#[tauri::command]
+pub fn next_module(player: State<Mutex<Player>>) {
+    player.lock().unwrap().next();
+}
+
+#[tauri::command]
+pub fn previous_module(player: State<Mutex<Player>>) {
+    player.lock().unwrap().previous();
+}
+
+#[tauri::command]
 pub fn subscribe_to_player_events(
     player: State<Mutex<Player>>,
     channel: tauri::ipc::Channel<PlayerEvent>,

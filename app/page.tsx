@@ -19,38 +19,53 @@ type PlayerEvent =
   | {
       event: "loaded";
       data: {
+        filename: string;
+        filepath: string;
         metadata: Array<{ key: string; value: string }>;
         duration: number;
       };
     }
   | { event: "playing"; data: undefined }
   | { event: "paused"; data: undefined }
+  | { event: "stopped"; data: undefined }
   | { event: "positionUpdated"; data: { position: number; duration: number } };
 
 export default function Home() {
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [title, setTitle] = useState("Unknown");
+  const [title, setTitle] = useState("");
 
   useEffect(() => {
     const channel = new Channel<PlayerEvent>();
     channel.onmessage = (message) => {
       switch (message.event) {
         case "loaded":
+          console.log(message);
           setDuration(message.data.duration);
           setPosition(0);
           const title = message.data.metadata.find(
             (candidate) => candidate.key === "title"
           );
+          const artist = message.data.metadata.find(
+            (candidate) => candidate.key === "artist"
+          );
+
           if (title) {
-            setTitle(title.value);
+            if (artist) {
+              setTitle(`${artist.value} - ${title.value}`);
+            } else {
+              setTitle(title.value);
+            }
           } else {
-            setTitle("Unknown");
+            setTitle(message.data.filename);
           }
           break;
         case "positionUpdated":
           setDuration(message.data.duration);
           setPosition(message.data.position);
+          break;
+        case "stopped":
+          setPosition(0);
           break;
         default:
           console.log(
@@ -75,12 +90,8 @@ export default function Home() {
   const handleLoad = async () => {
     const filepath = await open({
       multiple: false,
-      filters: [
-        {
-          name: "Mod",
-          extensions: ["s3m", "mod"],
-        },
-      ],
+      directory: true,
+      filters: [],
     });
 
     if (filepath !== null) {
@@ -96,6 +107,18 @@ export default function Home() {
     await invoke("pause_module");
   };
 
+  const handleStop = async () => {
+    await invoke("stop_module");
+  };
+
+  const handlePrevious = async () => {
+    await invoke("previous_module");
+  };
+
+  const handleNext = async () => {
+    await invoke("next_module");
+  };
+
   const formatSeconds = (seconds: number): string => {
     const rounded = Math.round(seconds);
     const s = rounded % 60;
@@ -108,7 +131,7 @@ export default function Home() {
     <main className="max-w-[400px] w-full shadow-lg p-4 rounded-lg mx-auto">
       <div className="mb-4">
         <div className="flex items-center justify-between space-x-2">
-          <Marquee className="text-lg font-semibold text-zinc-700 overflow-hidden whitespace-nowrap">
+          <Marquee className="text-lg font-semibold text-zinc-700">
             {title}
           </Marquee>
           <Button
@@ -136,7 +159,7 @@ export default function Home() {
         </div>
       </div>
       <div className="flex justify-center items-center space-x-2">
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon" onClick={handlePrevious}>
           <SkipBack className="w-5 h-5" />
         </Button>
         <Button variant="outline" size="icon" onClick={handlePlay}>
@@ -145,10 +168,10 @@ export default function Home() {
         <Button variant="outline" size="icon" onClick={handlePause}>
           <Pause className="w-5 h-5" />
         </Button>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon" onClick={handleStop}>
           <Square className="w-5 h-5" />
         </Button>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon" onClick={handleNext}>
           <SkipForward className="w-5 h-5" />
         </Button>
       </div>

@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::ffi::c_void;
 use std::ffi::CStr;
 use std::ffi::CString;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use libopenmpt_sys::*;
@@ -62,18 +62,16 @@ impl Module {
         })
     }
 
-    pub fn read(&mut self, rate: i32, data: &mut [f32]) {
-        unsafe {
-            let n_read = openmpt_module_read_interleaved_float_stereo(
+    pub fn read(&mut self, rate: i32, data: &mut [f32]) -> bool {
+        let n_read = unsafe {
+            openmpt_module_read_interleaved_float_stereo(
                 self.handle,
                 rate,
                 data.len() / 2,
                 data.as_mut_ptr(),
-            );
-            if n_read == 0 {
-                self.playback_end.store(true, Ordering::SeqCst);
-            }
+            )
         };
+        return n_read != 0;
     }
 
     pub fn get_duration_seconds(&self) -> f64 {
