@@ -1,6 +1,6 @@
 "use client";
 
-import { Channel, invoke } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,37 +12,20 @@ import {
   StepForward,
 } from "lucide-react";
 import { Seeker } from "@/components/ui/seeker";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Marquee } from "@/components/ui/marquee";
-
-type PlayerEvent =
-  | {
-      event: "loaded";
-      data: {
-        filename: string;
-        filepath: string;
-        metadata: Array<{ key: string; value: string }>;
-        duration: number;
-      };
-    }
-  | { event: "playing"; data: undefined }
-  | { event: "paused"; data: undefined }
-  | { event: "stopped"; data: undefined }
-  | { event: "positionUpdated"; data: { position: number; duration: number } };
+import { usePlayerEventBroker } from "@/components/context/PlayerEventBroker";
 
 export default function Home() {
-  const [position, setPosition] = useState(0);
-  const [duration, setDuration] = useState(0);
   const [title, setTitle] = useState("");
+  const broker = usePlayerEventBroker();
 
   useEffect(() => {
-    const channel = new Channel<PlayerEvent>();
-    channel.onmessage = (message) => {
+    console.warn("Home: Subscribing to player events");
+    const subscriptionId = broker.subscribe((message) => {
       switch (message.event) {
         case "loaded":
           console.log(message);
-          setDuration(message.data.duration);
-          setPosition(0);
           const title = message.data.metadata.find(
             (candidate) => candidate.key === "title"
           );
@@ -60,34 +43,15 @@ export default function Home() {
             setTitle(message.data.filename);
           }
           break;
-        case "positionUpdated":
-          setDuration(message.data.duration);
-          setPosition(message.data.position);
-          break;
-        case "stopped":
-          setPosition(0);
-          break;
-        default:
-          console.log(
-            "Received player event of type ",
-            message.event,
-            message.data
-          );
       }
-    };
-
-    const subscriptionPromise = invoke("subscribe_to_player_events", {
-      channel,
     });
 
     return () => {
-      subscriptionPromise.then((id) => {
-        invoke("unsubscribe_from_player_events", { id });
-      });
+      broker.unsubscribe(subscriptionId);
     };
-  }, []);
+  }, [broker]);
 
-  const handleLoad = async () => {
+  const handleLoad = useCallback(async () => {
     const filepath = await open({
       multiple: false,
       directory: true,
@@ -97,35 +61,27 @@ export default function Home() {
     if (filepath !== null) {
       await invoke("load_module", { filepath });
     }
-  };
+  }, []);
 
-  const handlePlay = async () => {
+  const handlePlay = useCallback(async () => {
     await invoke("play_module");
-  };
+  }, []);
 
-  const handlePause = async () => {
+  const handlePause = useCallback(async () => {
     await invoke("pause_module");
-  };
+  }, []);
 
-  const handleStop = async () => {
+  const handleStop = useCallback(async () => {
     await invoke("stop_module");
-  };
+  }, []);
 
-  const handlePrevious = async () => {
+  const handlePrevious = useCallback(async () => {
     await invoke("previous_module");
-  };
+  }, []);
 
-  const handleNext = async () => {
+  const handleNext = useCallback(async () => {
     await invoke("next_module");
-  };
-
-  const formatSeconds = (seconds: number): string => {
-    const rounded = Math.round(seconds);
-    const s = rounded % 60;
-    const m = Math.floor(rounded / 60);
-
-    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  };
+  }, []);
 
   return (
     <main className="max-w-[400px] w-full shadow-lg p-4 rounded-lg mx-auto">
@@ -146,18 +102,7 @@ export default function Home() {
           </Button>
         </div>
       </div>
-      <div className="space-y-2 mb-4">
-        <Seeker
-          value={[Math.round(position)]}
-          max={Math.round(duration)}
-          step={1}
-          className="w-full"
-        />
-        <div className="flex items-center justify-between text-zinc-600 text-sm">
-          <span>{formatSeconds(position)}</span>
-          <span>{formatSeconds(duration)}</span>
-        </div>
-      </div>
+      <Seeker className="mb-4" />
       <div className="flex justify-center items-center space-x-2">
         <Button variant="outline" size="icon" onClick={handlePrevious}>
           <SkipBack className="w-5 h-5" />

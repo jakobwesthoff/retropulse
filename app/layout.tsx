@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { PlayerEventBrokerProvider } from "@/components/context/PlayerEventBroker";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -13,7 +14,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <PlayerEventBrokerProvider>
+          {children}
+        </PlayerEventBrokerProvider>
+      </body>
     </html>
   );
 }

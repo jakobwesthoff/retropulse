@@ -33,6 +33,11 @@ pub fn previous_module(player: State<Mutex<Player>>) {
 }
 
 #[tauri::command]
+pub fn seek_module(player: State<Mutex<Player>>, position: f64) {
+    player.lock().unwrap().seek(position);
+}
+
+#[tauri::command]
 pub fn subscribe_to_player_events(
     player: State<Mutex<Player>>,
     channel: tauri::ipc::Channel<PlayerEvent>,
