@@ -202,6 +202,18 @@ impl AudioContext {
         self.activate_next();
         self.play();
     }
+
+    pub fn seek(&mut self, position: f64) {
+        if self.module.is_some() {
+            self.module.as_mut().unwrap().set_position_seconds(position);
+        }
+        self.event_sender
+            .send(PlayerEvent::Seeked {
+                position,
+                duration: self.module_duration.unwrap(),
+            })
+            .unwrap();
+    }
 }
 
 struct Playlist {
@@ -346,6 +358,10 @@ pub enum PlayerEvent {
         position: f64,
         duration: f64,
     },
+    Seeked {
+        position: f64,
+        duration: f64,
+    },
     Terminated,
 }
 
@@ -356,6 +372,7 @@ enum PlayerCommand {
     Stop,
     Previous,
     Next,
+    Seek(f64),
     Terminate,
 }
 
@@ -450,6 +467,10 @@ impl Player {
                         event_sender.send(PlayerEvent::Terminated).unwrap();
                         break 'receive_loop;
                     }
+                    PlayerCommand::Seek(position) => {
+                        println!("Seek: {}", position);
+                        audio_context.lock().unwrap().seek(position);
+                    }
                 }
             }
         }));
@@ -514,6 +535,11 @@ impl Player {
     pub fn next(&self) {
         let sender = self.get_channel();
         sender.send(PlayerCommand::Next).unwrap();
+    }
+
+    pub fn seek(&self, position: f64) {
+        let sender = self.get_channel();
+        sender.send(PlayerCommand::Seek(position)).unwrap();
     }
 
     pub fn subscribe_to_events(&mut self, channel: tauri::ipc::Channel<PlayerEvent>) -> String {

@@ -20,6 +20,7 @@ fn main() {
             commands::stop_module,
             commands::next_module,
             commands::previous_module,
+            commands::seek_module,
             commands::subscribe_to_player_events,
             commands::unsubscribe_from_player_events
         ])

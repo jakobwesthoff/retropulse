@@ -131,6 +131,12 @@ impl Module {
 
         self.metadata.borrow().as_ref().unwrap().clone()
     }
+
+    pub fn set_position_seconds(&mut self, position: f64) {
+        unsafe {
+            openmpt_module_set_position_seconds(self.handle, position);
+        }
+    }
 }
 
 // @TODO: Is this really needed? For what exactly
