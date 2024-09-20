@@ -5,20 +5,19 @@ import * as SliderPrimitive from "@radix-ui/react-slider";
 
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePlayerEventBroker } from "@/components/context/PlayerEventBroker";
 import { invoke } from "@tauri-apps/api/core";
+import { usePlayerEventBroker } from "@/components/context/PlayerEventBroker";
 
 export type SeekerProps = {
   className?: string;
 };
 
 const Seeker = ({ className }: SeekerProps) => {
-  const broker = usePlayerEventBroker();
-
   const [isSeeking, setIsSeeking] = useState(false);
   const [displayedSliderValue, setDisplayedSliderValue] = useState(0);
   const [realPosition, setRealPosition] = useState(0);
   const [duration, setDuration] = useState(0);
+  const broker = usePlayerEventBroker();
 
   const isSeekingRef = useRef(isSeeking);
   useEffect(() => {
@@ -26,7 +25,7 @@ const Seeker = ({ className }: SeekerProps) => {
   }, [isSeeking]);
 
   useEffect(() => {
-    const subscriptionId = broker.subscribe((message) => {
+    const id = broker.subscribe((message) => {
       switch (message.event) {
         case "positionUpdated":
           if (!isSeekingRef.current) {
@@ -53,7 +52,7 @@ const Seeker = ({ className }: SeekerProps) => {
     });
 
     return () => {
-      broker.unsubscribe(subscriptionId);
+      broker.unsubscribe(id);
     };
   }, [broker]);
 

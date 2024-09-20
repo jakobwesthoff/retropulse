@@ -21,8 +21,7 @@ export default function Home() {
   const broker = usePlayerEventBroker();
 
   useEffect(() => {
-    console.warn("Home: Subscribing to player events");
-    const subscriptionId = broker.subscribe((message) => {
+    const id = broker.subscribe((message) => {
       switch (message.event) {
         case "loaded":
           console.log(message);
@@ -47,7 +46,7 @@ export default function Home() {
     });
 
     return () => {
-      broker.unsubscribe(subscriptionId);
+      broker.unsubscribe(id);
     };
   }, [broker]);
 
