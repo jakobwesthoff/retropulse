@@ -1,15 +1,14 @@
 "use client";
 
 import { Channel, invoke } from "@tauri-apps/api/core";
-import React, {
+import {
   createContext,
-  useContext,
-  useState,
-  useEffect,
   PropsWithChildren,
   useCallback,
-  useRef,
+  useContext,
+  useEffect,
   useMemo,
+  useRef,
 } from "react";
 
 export type PlayerEvent =
@@ -28,52 +27,24 @@ export type PlayerEvent =
   | { event: "positionUpdated"; data: { position: number; duration: number } }
   | { event: "seeked"; data: { position: number; duration: number } };
 
-interface PlayerEventBroker {
-  subscribe: (callback: (event: PlayerEvent) => void) => string;
-  unsubscribe: (id: string) => void;
-}
+export type PlayerEventsSubscription = (event: PlayerEvent) => void;
 
-const PlayerEventBrokerContext = createContext<PlayerEventBroker | undefined>(
-  undefined
-);
+export type PlayerEventBrokerContext = {
+  subscribe(fn: PlayerEventsSubscription): string;
+  unsubscribe(id: string): void;
+};
 
-const PlayerEventBrokerProvider = ({ children }: PropsWithChildren) => {
-  const [subscribers, setSubscribers] = useState<
-    Map<string, (event: PlayerEvent) => void>
-  >(new Map());
-  const subscribersRef = useRef(subscribers);
+const PlayerEventBrokerContext = createContext<
+  PlayerEventBrokerContext | undefined
+>(undefined);
 
-  useEffect(() => {
-    subscribersRef.current = subscribers;
-  }, [subscribers]);
-
-  const subscribe = useCallback(
-    (callback: (event: PlayerEvent) => void): string => {
-      const id = Math.random().toString(36).substr(2, 9);
-      setSubscribers((prev) => new Map(prev).set(id, callback));
-      console.log(
-        "PlayerEventsBroker: Subscribing to player events with id",
-        id
-      );
-      return id;
-    },
-    []
+export const PlayerEventBrokerProvider = ({ children }: PropsWithChildren) => {
+  const subscriptionsRef = useRef<Map<string, PlayerEventsSubscription>>(
+    new Map()
   );
 
-  const unsubscribe = useCallback((id: string): void => {
-    console.error(
-      "PlayerEventsBroker: Unsubscribing from player events with id",
-      id
-    );
-    setSubscribers((prev) => {
-      const newSubscribers = new Map(prev);
-      newSubscribers.delete(id);
-      return newSubscribers;
-    });
-  }, []);
-
-  const dispatchEvent = useCallback((event: PlayerEvent) => {
-    subscribersRef.current.forEach((callback) => callback(event));
+  const dispatchEvent = useCallback((message: PlayerEvent): void => {
+    subscriptionsRef.current.forEach((subscription) => subscription(message));
   }, []);
 
   useEffect(() => {
@@ -87,11 +58,23 @@ const PlayerEventBrokerProvider = ({ children }: PropsWithChildren) => {
     });
 
     return () => {
-      subscriptionPromise.then((id) => {
-        invoke("unsubscribe_from_player_events", { id });
-      });
+      subscriptionPromise.then((id) =>
+        invoke("unsubscribe_from_player_events", { id })
+      );
     };
   }, [dispatchEvent]);
+
+  const subscribe = useCallback((fn: PlayerEventsSubscription): string => {
+    const id = Math.random().toString(36).substring(2, 11);
+    subscriptionsRef.current.set(id, fn);
+    console.log("Internal PlayerEvents subscription:", id);
+    return id;
+  }, []);
+
+  const unsubscribe = useCallback((id: string): void => {
+    subscriptionsRef.current.delete(id);
+    console.log("Internal PlayerEvents unsubscription:", id);
+  }, []);
 
   const value = useMemo(
     () => ({ subscribe, unsubscribe }),
@@ -105,14 +88,12 @@ const PlayerEventBrokerProvider = ({ children }: PropsWithChildren) => {
   );
 };
 
-const usePlayerEventBroker = () => {
+export const usePlayerEventBroker = (): PlayerEventBrokerContext => {
   const context = useContext(PlayerEventBrokerContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error(
-      "usePlayerEventBroker must be used within a PlayerEventBrokerProvider"
+      "usePlayerEventBroker can only be used within a PlayerEventBrokerProvider"
     );
   }
   return context;
 };
-
-export { PlayerEventBrokerProvider, usePlayerEventBroker };
