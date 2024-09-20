@@ -4,7 +4,9 @@
 
 RetroPulse is an unobtrusive, cross-platform mod/tracker music player built on [Tauri](https://tauri.app/) and [libopenmpt](https://lib.openmpt.org/). The player primarily resides in the menu bar/tray, designed to be completely out of your way. It was envisioned as a background music player for *soothing* retro music, allowing you to stay productive while enjoying your favorite tunes.
 
-<img src="assets/artwork/app-icon.png" alt="RetroPulse App Icon" style="width: 75%; margin: auto; display: block;">
+<p align="center">
+  <img src="assets/artwork/app-icon.png" alt="RetroPulse App Icon" style="width: 75%;">
+</p>
 
 ## Disclaimer
 
