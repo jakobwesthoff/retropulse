@@ -2214,6 +2214,27 @@
           "enum": [
             "dialog:deny-save"
           ]
+        },
+        {
+          "description": "positioner:default -> Allows the move_window command",
+          "type": "string",
+          "enum": [
+            "positioner:default"
+          ]
+        },
+        {
+          "description": "positioner:allow-move-window -> Enables the move_window command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "positioner:allow-move-window"
+          ]
+        },
+        {
+          "description": "positioner:deny-move-window -> Denies the move_window command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "positioner:deny-move-window"
+          ]
         }
       ]
     },

@@ -12,6 +12,11 @@ body {
   cursor: default;
 }
 
+body,
+html {
+  background-color: transparent;
+}
+
 body {
   font-family: Helvetica Neue, Arial, Helvetica, sans-serif;
 }
