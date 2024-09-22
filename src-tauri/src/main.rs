@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use player::Player;
+use tauri::ActivationPolicy;
 use std::sync::Mutex;
 
 mod commands;
@@ -31,6 +32,8 @@ fn main() {
             #[cfg(target_os = "macos")]
             {
                 tray::init_macos_menu_extra(app.handle())?;
+                // Make the Dock icon invisible
+                app.set_activation_policy(ActivationPolicy::Accessory);
             }
             Ok(())
         })
