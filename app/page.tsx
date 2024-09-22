@@ -83,7 +83,7 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="max-w-[400px] w-full shadow-lg p-4 rounded-lg mx-auto">
+    <main className="max-w-[400px] w-full shadow-lg p-4 rounded-lg mx-auto bg-white">
       <div className="mb-4">
         <div className="flex items-center justify-between space-x-2">
           <Marquee className="text-lg font-semibold text-zinc-700">
