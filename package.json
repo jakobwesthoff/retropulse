@@ -2,6 +2,12 @@
   "name": "retropulse",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "author": {
+    "name": "Jakob Westhoff",
+    "email": "jakob@westhoffswelt.de",
+    "url": "http://westhoffswelt.de"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
