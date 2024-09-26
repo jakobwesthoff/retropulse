@@ -2,6 +2,7 @@ use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager, Runtime,
+    image::Image,
 };
 use tauri_plugin_positioner::WindowExt;
 
@@ -10,7 +11,8 @@ pub fn init_macos_menu_extra<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Re
     let menu = Menu::with_items(app, &[&quit_i])?;
 
     let _ = TrayIconBuilder::with_id("menu_extra")
-        .icon(app.default_window_icon().unwrap().clone())
+        .icon(Image::from_bytes(include_bytes!("../../assets/artwork/menubar-template.png")).unwrap())
+        .icon_as_template(true)
         .menu(&menu)
         .menu_on_left_click(false)
         .on_menu_event(move |app, event| match event.id.as_ref() {
