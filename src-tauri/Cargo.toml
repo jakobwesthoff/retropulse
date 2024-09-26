@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "A simple menubar mod player"
 authors = ["Jakob Westhoff"]
 license = "MIT"
+license-file = "../LICENSE.txt"
 repository = "https://github.com/jakobwesthoff/retropulse"
 default-run = "retropulse"
 edition = "2021"
