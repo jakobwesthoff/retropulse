@@ -1,57 +1,14 @@
 "use client";
 
 import { useWinampSkin } from "@/components/context/WinampSkin";
-import { cn } from "@/lib/utils";
 import {
-  forwardRef,
-  MouseEvent,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-
-type WinampButtonProps = {
-  className?: string;
-  onClick?: (e: MouseEvent) => void;
-  onMouseDown?: (e: MouseEvent) => void;
-  onMouseUp?: (e: MouseEvent) => void;
-  children?: React.ReactNode;
-  sprite: string;
-  style?: React.CSSProperties;
-};
-
-const WinampButton = forwardRef<HTMLButtonElement, WinampButtonProps>(
-  function WinampButton(
-    {
-      sprite,
-      className,
-      onClick = () => {},
-      onMouseDown = () => {},
-      onMouseUp = () => {},
-      style = {},
-      children = null,
-    },
-    ref
-  ) {
-    return (
-      <button
-        ref={ref}
-        className={cn(
-          `winamp-${sprite}`,
-          "cursor-auto m-0 p-0 block",
-          className
-        )}
-        onClick={onClick}
-        onMouseDown={onMouseDown}
-        onMouseUp={onMouseUp}
-        style={style}
-      >
-        {children}
-      </button>
-    );
-  }
-);
+  WinampButton,
+  WinampMarquee,
+  WinampSlider,
+  WinampSpriteText,
+  WinampToggleButton,
+} from "@/components/ui/winamp";
+import { useState } from "react";
 
 const WinampPlayerControls = () => {
   return (
@@ -81,32 +38,6 @@ const WinampPlayerControls = () => {
         className="absolute top-[89px] left-[136px]"
       />
     </>
-  );
-};
-
-type WinampToggleButtonProps = {
-  sprite: string;
-  checked: boolean;
-  className?: string;
-  onChange?: (checked: boolean) => void;
-  children?: React.ReactNode;
-};
-
-const WinampToggleButton = ({
-  checked,
-  sprite,
-  onChange = () => {},
-  className,
-  children,
-}: WinampToggleButtonProps) => {
-  return (
-    <WinampButton
-      sprite={sprite}
-      className={cn(className, checked ? "checked" : "")}
-      onClick={() => onChange(!checked)}
-    >
-      {children}
-    </WinampButton>
   );
 };
 
@@ -175,112 +106,6 @@ const WinampMonoStereo = () => {
   );
 };
 
-type WinampSliderProps = {
-  value: number;
-  onChange?: (value: number) => void;
-  background: (value: number) => string;
-  thumb: string;
-  className?: string;
-};
-
-const WinampSlider = ({
-  value,
-  background,
-  thumb,
-  className,
-  onChange,
-}: WinampSliderProps) => {
-  const offsetX = useRef(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [newValue, setNewValue] = useState(value);
-  const thumbRef = useRef<HTMLButtonElement>(null);
-  const [thumbWidth, setThumbWidth] = useState(0);
-  const referenceRef = useRef<HTMLDivElement>(null);
-
-  const calculateValue = useCallback((x: number) => {
-    const referenceRect = referenceRef.current?.getBoundingClientRect();
-    const referenceLeft = referenceRect?.left || 0;
-    const referenceWidth = referenceRect?.width || 0;
-    // Calculate the new value based on the mouse position over the thumb in relation to the reference
-    const newValue = Math.min(
-      1,
-      Math.max(0, (x - offsetX.current - referenceLeft) / referenceWidth)
-    );
-
-    return newValue;
-  }, []);
-
-  useEffect(() => {
-    setThumbWidth(thumbRef.current?.getBoundingClientRect().width || 0);
-  }, []);
-
-  useEffect(() => {
-    if (isDragging) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      // @TODO: No idea, which this can't be MouseEvent :(. So a quick hack to get it working
-      const handleMouseMove = (e: any) => {
-        setNewValue(calculateValue(e.clientX));
-      };
-
-      const handleMouseUp = () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
-        setIsDragging(false);
-      };
-
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-    }
-
-    return () => {
-      window.removeEventListener("mousemove", () => {});
-      window.removeEventListener("mouseup", () => {});
-    };
-  }, [isDragging, onChange, calculateValue]);
-
-  const handleThumbMouseDown = useCallback(
-    (e: MouseEvent) => {
-      const x = e.clientX;
-      const thumbRect = thumbRef.current?.getBoundingClientRect();
-      const thumbWidth = thumbRect?.width || 0;
-      const thumbLeft = thumbRect?.left || 0;
-      offsetX.current = x - thumbLeft - thumbWidth / 2;
-      setNewValue(calculateValue(x));
-      setIsDragging(true);
-      console.log("Dragging");
-    },
-    [calculateValue]
-  );
-
-  return (
-    <div className={cn("relative", className)}>
-      <div
-        className={cn(
-          "w-full h-full",
-          `winamp-${background(isDragging ? newValue : value)}`
-        )}
-      >
-        <div
-          ref={referenceRef}
-          className="relative h-full flex items-center"
-          style={{
-            left: `${Math.round(thumbWidth / 2)}px`,
-            width: `calc(100% - ${thumbWidth}px)`,
-          }}
-        >
-          <WinampButton
-            ref={thumbRef}
-            className={`absolute translate-x-[-50%]`}
-            sprite={thumb}
-            onMouseDown={handleThumbMouseDown}
-            style={{ left: `${(isDragging ? newValue : value) * 100}%` }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const WinampSoundSliders = () => {
   return (
     <>
@@ -311,7 +136,24 @@ const WindampTrackSlider = () => {
       className="absolute top-[72px] left-[16px]"
     />
   );
-}
+};
+
+const WinampTrackTitle = () => {
+  return (
+    <WinampMarquee
+      text="Hello World! It really whips the llamas ass"
+      seperator={" +++ "}
+      className="absolute top-[27px] left-[110px] w-[155px]"
+    />
+  );
+};
+
+const WinampKilobitsAndKiloHertz = () => {
+  return <>
+    <WinampSpriteText text='192' className='absolute left-[111px] top-[43px]' />
+    <WinampSpriteText text='44' className='absolute left-[156px] top-[43px]' />
+  </>;
+};
 
 export default function WinampUI() {
   const skin = useWinampSkin();
@@ -327,6 +169,8 @@ export default function WinampUI() {
           <WinampMonoStereo />
           <WinampSoundSliders />
           <WindampTrackSlider />
+          <WinampTrackTitle />
+          <WinampKilobitsAndKiloHertz />
         </div>
       </div>
       <style jsx>{`
