@@ -1,4 +1,6 @@
+use crate::config::AppConfig;
 use crate::player::{Player, PlayerEvent};
+use crate::winamp;
 use std::sync::Mutex;
 use tauri::State;
 
@@ -50,4 +52,22 @@ pub fn subscribe_to_player_events(
 pub fn unsubscribe_from_player_events(player: State<Mutex<Player>>, id: String) -> bool {
     eprintln!("Unsubscribing from player events with {}", id);
     dbg!(player.lock().unwrap().unsubscribe_from_events(id))
+}
+
+#[tauri::command]
+pub async fn get_winamp_sprite_map() -> Result<winamp::SerializableSpriteMap, tauri::Error> {
+    tauri::async_runtime::spawn_blocking(|| {
+        winamp::WinampSkin::from_wsz_in_memory(include_bytes!(
+            "../../assets/winamp_skin/base-2.91.wsz"
+        ))
+        .unwrap()
+        .generate_sprite_map()
+        .unwrap()
+    })
+    .await
+}
+
+#[tauri::command]
+pub fn get_app_config(config: State<Mutex<AppConfig>>) -> AppConfig {
+    config.lock().unwrap().clone()
 }

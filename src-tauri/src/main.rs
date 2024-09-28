@@ -2,13 +2,15 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use player::Player;
-use tauri::ActivationPolicy;
+use tauri::{ActivationPolicy, Manager};
 use std::sync::Mutex;
 
 mod commands;
 mod openmpt;
 mod player;
 mod tray;
+mod winamp;
+mod config;
 
 fn main() {
     let player = Player::spawn();
@@ -17,6 +19,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_positioner::init())
         .invoke_handler(tauri::generate_handler![
+            commands::get_app_config,
             commands::load_module,
             commands::play_module,
             commands::pause_module,
@@ -25,10 +28,16 @@ fn main() {
             commands::previous_module,
             commands::seek_module,
             commands::subscribe_to_player_events,
-            commands::unsubscribe_from_player_events
+            commands::unsubscribe_from_player_events,
+            commands::get_winamp_sprite_map,
         ])
         .manage(Mutex::new(player))
         .setup(|app| {
+            let main_window = app.get_webview_window("main").unwrap();
+            main_window.open_devtools();
+
+            app.manage(Mutex::new(config::AppConfig::load(app.handle())?));
+
             #[cfg(target_os = "macos")]
             {
                 tray::init_macos_menu_extra(app.handle())?;

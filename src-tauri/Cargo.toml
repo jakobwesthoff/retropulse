@@ -26,6 +26,17 @@ uuid = { version = "1.10.0", features = ["v4"] }
 anyhow = "1.0.89"
 crossbeam = { version = "0.8.4", features = ["crossbeam-channel"] }
 tauri-plugin-positioner = { version = "2.0.0-rc", features = ["tray-icon"] }
+zip = "2.2.0"
+image = {version = "0.25.2", features = ["bmp", "png"], default-features = false}
+base64 = "0.22.1"
+config = "0.14.0"
+toml = "0.8.19"
+
+[profile.release]
+lto = "fat"
+opt-level = 3
+codegen-units = 1
+debug = false
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

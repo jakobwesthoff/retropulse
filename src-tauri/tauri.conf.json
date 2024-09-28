@@ -62,8 +62,8 @@
         "minimizable": false,
         "resizable": false,
         "shadow": false,
-        "visible": false,
-        "transparent": true
+        "visible": true,
+        "transparent": false
       }
     ],
     "macOSPrivateApi": true,
