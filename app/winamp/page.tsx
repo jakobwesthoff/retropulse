@@ -1,6 +1,7 @@
 "use client";
 
 import { useWinampSkin } from "@/components/context/WinampSkin";
+import { SizedTauriWindow } from "@/components/tauri/SizedTauriWindow";
 import {
   WinampButton,
   WinampDigits,
@@ -10,6 +11,7 @@ import {
   WinampSpriteText,
   WinampToggleButton,
 } from "@/components/ui/winamp";
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 type WinampPlayerControlsProps = {
@@ -331,56 +333,88 @@ const WinampPlayTime = ({
 
 type WinampBodyProps = {
   children: React.ReactNode;
+  doubleSize?: boolean;
   onTitlebarMouseDown?: () => void;
   onTitlebarMouseUp?: () => void;
   onTitlebarClick?: () => void;
 };
 
 const WinampPlayerWindow = ({
+  doubleSize = false,
   onTitlebarMouseDown = () => {},
   onTitlebarMouseUp = () => {},
   onTitlebarClick = () => {},
   children,
 }: WinampBodyProps) => {
   return (
-    <div className="flex flex-col">
-      <WinampButton
-        sprite="titlebar-main"
-        onClick={onTitlebarClick}
-        onMouseDown={onTitlebarMouseDown}
-        onMouseUp={onTitlebarMouseUp}
-      />
-      <div className="winamp-main-main relative">{children}</div>
-    </div>
+    <>
+      <div
+        className={cn(
+          "winamp-player-window",
+          "flex flex-col",
+          doubleSize && "winamp-player-doubled"
+        )}
+      >
+        <WinampButton
+          sprite="titlebar-main"
+          onClick={onTitlebarClick}
+          onMouseDown={onTitlebarMouseDown}
+          onMouseUp={onTitlebarMouseUp}
+        />
+        <div className="winamp-main-main relative">{children}</div>
+      </div>
+      <style jsx>{`
+        .winamp-player-window {
+          image-rendering: -moz-crisp-edges;
+          image-rendering: -o-crisp-edges;
+          image-rendering: -webkit-optimize-contrast;
+          -ms-interpolation-mode: nearest-neighbor;
+          image-rendering: pixelated;
+        }
+
+        /*
+         * @TODO: This does not work properly yet. It was just an idea. I need to
+         * take a closer look at how this might be feasible
+         *
+         * Currently it seems to break the sliders, the scrolling text, as well
+         * as the sizing of the displayed body, as scrollbars appear ;)
+         */
+        .winamp-player-doubled {
+          transform-origin: 0 0;
+          transform: translateZ(0) scale(2);
+        }
+      `}</style>
+    </>
   );
 };
 
-type WinampSkinnedProps = {
-  children: React.ReactNode;
+type WinampClutterBarProps = {
+  onOptionsClick: () => void;
+  onDoubleSizeChange: () => void;
+  doubleSize: boolean;
+  // @TODO: I have no idea, what the A, I and V buttons are usually doing
+  // anymore. We can extend this API, should be need it.
 };
 
-const WinampSkinned = ({ children }: WinampSkinnedProps) => {
-  const skin = useWinampSkin();
-
+const WinampClutterBar = ({
+  onOptionsClick,
+  onDoubleSizeChange,
+  doubleSize,
+}: WinampClutterBarProps) => {
   return (
-    <>
-      <div className="winamp-ui">{children}</div>
-      <style jsx>{`
-        .winamp-ui {
-          --winamp-skin: url(${skin.sprites.encodedImage});
-        }
-        .sprite-map {
-          background-image: var(--winamp-skin);
-          background-repeat: no-repeat;
-          image-rendering: pixelated;
-          background-size: ${skin.sprites.width}px ${skin.sprites.height}px;
-          width: ${skin.sprites.width}px;
-          height: ${skin.sprites.height}px;
-        }
-
-        ${skin.css}
-      `}</style>
-    </>
+    <div className="flex flex-col">
+      <WinampButton
+        sprite="clutterbar-options"
+        className="absolute top-[0px] left-[0px]"
+        onClick={onOptionsClick}
+      />
+      <WinampToggleButton
+        sprite="clutterbar-doublesize"
+        className="absolute top-[0px] left-[250px]"
+        checked={doubleSize}
+        onChange={onDoubleSizeChange}
+      />
+    </div>
   );
 };
 
@@ -394,9 +428,15 @@ export default function WinampUI() {
   const [repeat, setRepeat] = useState(false);
   const [playtimeMode, setPlaytimeMode] = useState(PlayTimeMode.Played);
 
+  // @TODO: Doesn't work properly yet. See the comment in the WinampPlayerWindow
+  const [doubleSize] = useState(false);
+
   return (
-    <WinampSkinned>
-      <WinampPlayerWindow>
+    <SizedTauriWindow
+      width={275 * (doubleSize ? 2 : 1)}
+      height={130 * (doubleSize ? 2 : 1)}
+    >
+      <WinampPlayerWindow doubleSize={doubleSize}>
         <WinampPlayerControls
           onPrevious={() => {}}
           onPlay={() => {}}
@@ -439,7 +479,10 @@ export default function WinampUI() {
           mode={playtimeMode}
           onModeChange={(mode) => setPlaytimeMode(mode)}
         />
+        {/*@TODO: Implement the clutterbar, which is hard to do, as it consists of
+      one image for each of its state even though it has all seperate "button
+      zones".*/}
       </WinampPlayerWindow>
-    </WinampSkinned>
+    </SizedTauriWindow>
   );
 }

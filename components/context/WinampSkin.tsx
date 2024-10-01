@@ -112,3 +112,32 @@ export const useWinampSkin = (): WinampSkin => {
 
   return use(context);
 };
+
+export type WinampSkinnedProps = {
+  children: React.ReactNode;
+};
+
+export const WinampSkinned = ({ children }: WinampSkinnedProps) => {
+  const skin = useWinampSkin();
+
+  return (
+    <>
+      <div className="winamp-ui">{children}</div>
+      <style jsx>{`
+        .winamp-ui {
+          --winamp-skin: url(${skin.sprites.encodedImage});
+        }
+        .sprite-map {
+          background-image: var(--winamp-skin);
+          background-repeat: no-repeat;
+          image-rendering: pixelated;
+          background-size: ${skin.sprites.width}px ${skin.sprites.height}px;
+          width: ${skin.sprites.width}px;
+          height: ${skin.sprites.height}px;
+        }
+
+        ${skin.css}
+      `}</style>
+    </>
+  );
+};

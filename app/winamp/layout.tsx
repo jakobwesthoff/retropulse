@@ -1,4 +1,7 @@
-import { WinampSkinProvider } from "@/components/context/WinampSkin";
+import {
+  WinampSkinned,
+  WinampSkinProvider,
+} from "@/components/context/WinampSkin";
 
 export default function WinampLayout({
   children,
@@ -7,7 +10,9 @@ export default function WinampLayout({
 }>) {
   return (
     <WinampSkinProvider>
-      {children}
+      <WinampSkinned>
+        {children}
+      </WinampSkinned>
     </WinampSkinProvider>
   );
 }
