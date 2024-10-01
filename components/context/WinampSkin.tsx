@@ -84,7 +84,6 @@ export const WinampSkinProvider = ({ children }: PropsWithChildren) => {
     // useEffect is only called on the client
     setIsClient(true);
     invoke<SpriteMap>("get_winamp_sprite_map").then((sprites) => {
-      console.log("Received SpriteMap", sprites);
       suspender.resolve(createWinampSkin(sprites));
     });
   }, [suspender, appConfig]);

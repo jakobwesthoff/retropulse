@@ -8,6 +8,15 @@ import React, {
   useState,
 } from "react";
 
+export type WinampSpriteProps = {
+  className?: string;
+  sprite: string;
+};
+
+export const WinampSprite = ({ sprite, className }: WinampSpriteProps) => {
+  return <div className={cn(`winamp-${sprite}`, className)} />;
+};
+
 export type WinampButtonProps = {
   className?: string;
   onClick?: MouseEventHandler<HTMLButtonElement>;
@@ -93,7 +102,11 @@ export const WinampSlider = ({
 }: WinampSliderProps) => {
   const offsetX = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [newValue, setNewValue] = useState(value);
+  // We need a value to use during mouse drags as a state to trigger rerenders
+  const [dragRenderValue, setDragRenderValue] = useState(value);
+  // and we need essentially the same value, but as a reference to access in
+  // mouse up event handler
+  const newValue = useRef(value);
   const thumbRef = useRef<HTMLButtonElement>(null);
   const [thumbWidth, setThumbWidth] = useState(0);
   const referenceRef = useRef<HTMLDivElement>(null);
@@ -118,12 +131,14 @@ export const WinampSlider = ({
   useEffect(() => {
     if (isDragging) {
       const handleMouseMove = (e: MouseEvent) => {
-        setNewValue(calculateValue(e.clientX));
+        newValue.current = calculateValue(e.clientX);
+        setDragRenderValue(newValue.current);
       };
 
       const handleMouseUp = () => {
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
+        onChange?.(newValue.current);
         setIsDragging(false);
       };
 
@@ -144,9 +159,8 @@ export const WinampSlider = ({
       const thumbWidth = thumbRect?.width || 0;
       const thumbLeft = thumbRect?.left || 0;
       offsetX.current = x - thumbLeft - thumbWidth / 2;
-      setNewValue(calculateValue(x));
+      setDragRenderValue(calculateValue(x));
       setIsDragging(true);
-      console.log("Dragging");
     },
     [calculateValue]
   );
@@ -156,7 +170,7 @@ export const WinampSlider = ({
       <div
         className={cn(
           "w-full h-full",
-          `winamp-${background(isDragging ? newValue : value)}`
+          `winamp-${background(isDragging ? dragRenderValue : value)}`
         )}
       >
         <div
@@ -172,7 +186,7 @@ export const WinampSlider = ({
             className={`absolute translate-x-[-50%]`}
             sprite={thumb}
             onMouseDown={handleThumbMouseDown}
-            style={{ left: `${(isDragging ? newValue : value) * 100}%` }}
+            style={{ left: `${(isDragging ? dragRenderValue : value) * 100}%` }}
           />
         </div>
       </div>
@@ -331,20 +345,23 @@ export const WinampMarquee = ({
   const [animated, setAnimated] = useState(false);
   useEffect(() => {
     setAnimated(containerWidth < textLength * charWidth);
-  }, [containerWidth, fullLength]);
+  }, [containerWidth, textLength, fullLength]);
 
   return (
     <>
-      <div ref={containerRef} className={cn(className, "overflow-hidden relative")}>
+      <div
+        ref={containerRef}
+        className={cn(className, "overflow-hidden relative")}
+      >
         {animated ? (
           <div
             className="animate-marquee flex"
             style={{ "--characters": fullLength } as React.CSSProperties}
           >
-            <WinampSpriteText text={text} className='float-left'/>
-            <WinampSpriteText text={seperator} className='float-left'/>
-            <WinampSpriteText text={text} className='float-left'/>
-            <WinampSpriteText text={seperator} className='float-left'/>
+            <WinampSpriteText text={text} className="float-left" />
+            <WinampSpriteText text={seperator} className="float-left" />
+            <WinampSpriteText text={text} className="float-left" />
+            <WinampSpriteText text={seperator} className="float-left" />
           </div>
         ) : (
           <div>
@@ -370,5 +387,31 @@ export const WinampMarquee = ({
         }
       `}</style>
     </>
+  );
+};
+
+export type WinampDigitsProps = {
+  value: number;
+  padding?: number;
+  className?: string;
+};
+
+export const WinampDigits = ({
+  value,
+  padding = 0,
+  className,
+}: WinampDigitsProps) => {
+  const digits = value
+    .toString()
+    .padStart(padding, "0")
+    .split("")
+    .map((digit, i) => (
+      <WinampSprite key={i} sprite={`numbers-digit-${digit}`} />
+    ));
+
+  return (
+    <div className={cn(`flex text-nowrap}`, className)} style={{ gap: "3px" }}>
+      {digits}
+    </div>
   );
 };

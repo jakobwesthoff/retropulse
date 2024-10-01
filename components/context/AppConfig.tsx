@@ -27,7 +27,6 @@ export const AppConfigProvider = ({ children }: PropsWithChildren) => {
     // useEffect is only called on the client
     setIsClient(true);
     invoke<AppConfig>("get_app_config").then((config) => {
-      console.log("Received AppConfig", config);
       suspender.resolve(config);
     });
   }, [suspender]);

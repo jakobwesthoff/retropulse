@@ -489,11 +489,11 @@ impl WinampSkin {
                     );
                     sprite_map.insert(
                         "playpaus-not-working",
-                        Sprite::from_sub_image(&image, 36, 0, 9, 9),
+                        Sprite::from_sub_image(&image, 36, 0, 6, 3),
                     );
                     sprite_map.insert(
                         "playpaus-working",
-                        Sprite::from_sub_image(&image, 39, 0, 9, 9),
+                        Sprite::from_sub_image(&image, 36, 6, 6, 3),
                     );
                 }
                 "numbers.bmp" => {
