@@ -122,7 +122,7 @@ export const WinampSkinned = ({ children }: WinampSkinnedProps) => {
 
   return (
     <>
-      <div className="winamp-ui">{children}</div>
+      <div className="winamp-ui align-top inline-block">{children}</div>
       <style jsx>{`
         .winamp-ui {
           --winamp-skin: url(${skin.sprites.encodedImage});

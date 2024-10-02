@@ -380,7 +380,7 @@ const WinampPlayerWindow = ({
          */
         .winamp-player-doubled {
           transform-origin: 0 0;
-          transform: translateZ(0) scale(2);
+          transform: scale(2);
         }
       `}</style>
     </>
@@ -428,7 +428,7 @@ export default function WinampUI() {
   const [playtimeMode, setPlaytimeMode] = useState(PlayTimeMode.Played);
 
   // @TODO: Doesn't work properly yet. See the comment in the WinampPlayerWindow
-  const [doubleSize] = useState(false);
+  const [doubleSize] = useState(true);
 
   return (
     <SizedTauriWindow
