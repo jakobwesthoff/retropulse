@@ -371,13 +371,8 @@ const WinampPlayerWindow = ({
           image-rendering: pixelated;
         }
 
-        /*
-         * @TODO: This does not work properly yet. It was just an idea. I need to
-         * take a closer look at how this might be feasible
-         *
-         * Currently it seems to break the sliders, the scrolling text, as well
-         * as the sizing of the displayed body, as scrollbars appear ;)
-         */
+        /* @TODO: Might not work on all Systems/Browsers. Has to be tested, when
+         * doing crossplatform integration. */
         .winamp-player-doubled {
           transform-origin: 0 0;
           transform: scale(2);
@@ -427,7 +422,7 @@ export default function WinampUI() {
   const [repeat, setRepeat] = useState(false);
   const [playtimeMode, setPlaytimeMode] = useState(PlayTimeMode.Played);
 
-  // @TODO: Doesn't work properly yet. See the comment in the WinampPlayerWindow
+  // @TODO: Allow for toggling using the clutterbar
   const [doubleSize] = useState(true);
 
   return (
