@@ -1,15 +1,13 @@
 "use client";
 
 import { SizedTauriWindow } from "@/components/tauri/SizedTauriWindow";
-import {
-  WinampButton,
-  WinampDigits,
-  WinampMarquee,
-  WinampSlider,
-  WinampSprite,
-  WinampSpriteText,
-  WinampToggleButton,
-} from "@/components/ui/winamp";
+import { WinampButton } from '@/components/ui/winamp/winamp-button';
+import { WinampDigits } from '@/components/ui/winamp/winamp-digits';
+import { WinampMarquee } from '@/components/ui/winamp/winamp-marquee';
+import { WinampSlider } from '@/components/ui/winamp/winamp-slider';
+import { WinampSprite } from '@/components/ui/winamp/winamp-sprite';
+import { WinampSpriteText } from '@/components/ui/winamp/winamp-sprite-text';
+import { WinampToggleButton } from '@/components/ui/winamp/winamp-toggle-button';
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 

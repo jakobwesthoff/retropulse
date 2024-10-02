@@ -14,7 +14,7 @@ export const SizedTauriWindow = ({
 }: SizedTauriWindowProps) => {
   useEffect(() => {
     if (typeof window !== "undefined") {
-      let tauriWindow = getCurrentWindow();
+      const tauriWindow = getCurrentWindow();
       tauriWindow.setSize(new LogicalSize(width, height));
     }
   }, [width, height]);
