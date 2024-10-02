@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn, computedStyleRect } from "@/lib/utils";
 import React, {
   forwardRef,
   MouseEventHandler,
@@ -108,10 +108,16 @@ export const WinampSlider = ({
   // mouse up event handler
   const newValue = useRef(value);
   const thumbRef = useRef<HTMLButtonElement>(null);
-  const [thumbWidth, setThumbWidth] = useState(0);
+  // This value will be in layout space not in "real" space
+  // See the comment in the useEffect below for details
+  const [layoutThumbWidth, setLayoutThumbWidth] = useState(0);
   const referenceRef = useRef<HTMLDivElement>(null);
 
   const calculateValue = useCallback((x: number) => {
+    if (!referenceRef.current) {
+      return 0;
+    }
+
     const referenceRect = referenceRef.current?.getBoundingClientRect();
     const referenceLeft = referenceRect?.left || 0;
     const referenceWidth = referenceRect?.width || 0;
@@ -125,7 +131,13 @@ export const WinampSlider = ({
   }, []);
 
   useEffect(() => {
-    setThumbWidth(thumbRef.current?.getBoundingClientRect().width || 0);
+    // This is a bit of a hack to get the thumb width, as we are using the
+    // "layout" value here, even if the thumb is scaled by a transform (double
+    // size). All the other code paths of the slider are working with the "real
+    // value" as they reacting to mouse move events, which are not affected by
+    // the scale transform.  Just keep in mind, that the thumbWidth property is
+    // in "layout" pixels not "real" pixels.
+    setLayoutThumbWidth(computedStyleRect(thumbRef.current).width);
   }, []);
 
   useEffect(() => {
@@ -177,8 +189,8 @@ export const WinampSlider = ({
           ref={referenceRef}
           className="relative h-full flex items-center"
           style={{
-            left: `${Math.round(thumbWidth / 2)}px`,
-            width: `calc(100% - ${thumbWidth}px)`,
+            left: `${Math.round(layoutThumbWidth / 2)}px`,
+            width: `calc(100% - ${layoutThumbWidth}px)`,
           }}
         >
           <WinampButton
@@ -308,7 +320,7 @@ export const WinampSpriteText = ({
     .map((className, i) => <div key={i} className={className} />);
   return (
     <div
-      className={cn(`flex text-nowrap}`, className)}
+      className={cn(`flex text-nowrap`, className)}
       style={{ width: `${charWidth * text.length}px` }}
     >
       {letters}
@@ -339,7 +351,9 @@ export const WinampMarquee = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   useEffect(() => {
-    setContainerWidth(containerRef.current?.getBoundingClientRect().width || 0);
+    if (!containerRef.current) return;
+    const computedRect = computedStyleRect(containerRef.current);
+    setContainerWidth(computedRect.width);
   }, []);
 
   const [animated, setAnimated] = useState(false);
@@ -410,7 +424,7 @@ export const WinampDigits = ({
     ));
 
   return (
-    <div className={cn(`flex text-nowrap}`, className)} style={{ gap: "3px" }}>
+    <div className={cn(`flex text-nowrap`, className)} style={{ gap: "3px" }}>
       {digits}
     </div>
   );

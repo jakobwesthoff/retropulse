@@ -21,3 +21,18 @@ export function createDeferred<T>(): Deferred<T> {
 
   return { resolve: resolve!, reject: reject!, promise };
 }
+
+export function computedStyleRect(
+  element: HTMLElement | undefined | null
+): DOMRect {
+  if (!element) {
+    return new DOMRect(0, 0, 0, 0);
+  }
+
+  const style = getComputedStyle(element);
+  const width = parseInt(style.width);
+  const height = parseInt(style.height);
+  const top = parseInt(style.top);
+  const left = parseInt(style.left);
+  return new DOMRect(left, top, width, height);
+}
