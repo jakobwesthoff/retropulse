@@ -1,6 +1,5 @@
 "use client";
 
-import { useWinampSkin } from "@/components/context/WinampSkin";
 import { SizedTauriWindow } from "@/components/tauri/SizedTauriWindow";
 import {
   WinampButton,
