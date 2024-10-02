@@ -9,7 +9,6 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    console.log(use_winamp_skin);
     if (use_winamp_skin) {
       router.push("/winamp");
     } else {
