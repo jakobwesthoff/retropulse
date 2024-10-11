@@ -380,35 +380,35 @@ const WinampPlayerWindow = ({
   );
 };
 
-type WinampClutterBarProps = {
-  onOptionsClick: () => void;
-  onDoubleSizeChange: () => void;
-  doubleSize: boolean;
-  // @TODO: I have no idea, what the A, I and V buttons are usually doing
-  // anymore. We can extend this API, should be need it.
-};
+// type WinampClutterBarProps = {
+//   onOptionsClick: () => void;
+//   onDoubleSizeChange: () => void;
+//   doubleSize: boolean;
+//   // @TODO: I have no idea, what the A, I and V buttons are usually doing
+//   // anymore. We can extend this API, should be need it.
+// };
 
-const WinampClutterBar = ({
-  onOptionsClick,
-  onDoubleSizeChange,
-  doubleSize,
-}: WinampClutterBarProps) => {
-  return (
-    <div className="flex flex-col">
-      <WinampButton
-        sprite="clutterbar-options"
-        className="absolute top-[0px] left-[0px]"
-        onClick={onOptionsClick}
-      />
-      <WinampToggleButton
-        sprite="clutterbar-doublesize"
-        className="absolute top-[0px] left-[250px]"
-        checked={doubleSize}
-        onChange={onDoubleSizeChange}
-      />
-    </div>
-  );
-};
+// const WinampClutterBar = ({
+//   onOptionsClick,
+//   onDoubleSizeChange,
+//   doubleSize,
+// }: WinampClutterBarProps) => {
+//   return (
+//     <div className="flex flex-col">
+//       <WinampButton
+//         sprite="clutterbar-options"
+//         className="absolute top-[0px] left-[0px]"
+//         onClick={onOptionsClick}
+//       />
+//       <WinampToggleButton
+//         sprite="clutterbar-doublesize"
+//         className="absolute top-[0px] left-[250px]"
+//         checked={doubleSize}
+//         onChange={onDoubleSizeChange}
+//       />
+//     </div>
+//   );
+// };
 
 export default function WinampUI() {
   const [trackPosition, setTrackPosition] = useState<number>(0.5);

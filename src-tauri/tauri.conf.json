@@ -63,7 +63,7 @@
         "resizable": false,
         "shadow": false,
         "visible": true,
-        "transparent": false
+        "transparent": true
       }
     ],
     "macOSPrivateApi": true,

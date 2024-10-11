@@ -33,8 +33,8 @@ fn main() {
         ])
         .manage(Mutex::new(player))
         .setup(|app| {
-            let main_window = app.get_webview_window("main").unwrap();
-            main_window.open_devtools();
+            // let main_window = app.get_webview_window("main").unwrap();
+            // main_window.open_devtools();
 
             app.manage(Mutex::new(config::AppConfig::load(app.handle())?));
 
